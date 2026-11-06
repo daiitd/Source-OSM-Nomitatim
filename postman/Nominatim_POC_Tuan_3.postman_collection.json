@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "Nominatim OSM Backend POC - Tuan 3",
+    "_postman_id": "7b561d12-9eb7-4404-ad4e-deebfdcd6cad",
+    "description": "Bộ sưu tập kiểm thử API POC Geocoding Tuần 3 (MID Software: Nguyễn Phương Đại · Dương Đức Quân).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Search API",
+      "item": [
+        {
+          "name": "TC_S1: Search hợp lệ (Chợ Bến Thành)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/search?q=Chợ Bến Thành&limit=3&country=vn",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "search"],
+              "query": [
+                {"key": "q", "value": "Chợ Bến Thành"},
+                {"key": "limit", "value": "3"},
+                {"key": "country", "value": "vn"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response format valid', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('query');",
+                  "    pm.expect(json).to.have.property('count');",
+                  "    pm.expect(json).to.have.property('results');",
+                  "    pm.expect(json).to.have.property('meta');",
+                  "    pm.expect(json.meta.attribution).to.include('OpenStreetMap');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC_S2: Search lần 2 (Kiểm tra Cache Hit)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/search?q=Chợ Bến Thành&limit=3&country=vn",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "search"],
+              "query": [
+                {"key": "q", "value": "Chợ Bến Thành"},
+                {"key": "limit", "value": "3"},
+                {"key": "country", "value": "vn"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Cache Hit is TRUE', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.meta.cached).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC_S3: Search không có kết quả (Chuỗi vô nghĩa)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/search?q=xyzxyzxyz12345",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "search"],
+              "query": [
+                {"key": "q", "value": "xyzxyzxyz12345"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 (Empty search is not an error)', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Results array is empty', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.count).to.eql(0);",
+                  "    pm.expect(json.results.length).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC_S4: Lỗi Validate (q quá ngắn < 3 ký tự)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/search?q=ab",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "search"],
+              "query": [
+                {"key": "q", "value": "ab"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error code VALIDATION_ERROR', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Reverse API (3 Test Cases)",
+      "item": [
+        {
+          "name": "TC_R1: Tọa độ có dữ liệu (Chợ Bến Thành)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/reverse?lat=10.7725&lon=106.6980&zoom=18",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "reverse"],
+              "query": [
+                {"key": "lat", "value": "10.7725"},
+                {"key": "lon", "value": "106.6980"},
+                {"key": "zoom", "value": "18"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Valid GeocodeItem structure', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('result');",
+                  "    pm.expect(json.result.lat).to.be.a('number');",
+                  "    pm.expect(json.result.lon).to.be.a('number');",
+                  "    pm.expect(json.result.boundingBox).to.have.property('south');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC_R2: Tọa độ giữa biển (0, 0) - Không có kết quả",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/reverse?lat=0.0&lon=0.0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "reverse"],
+              "query": [
+                {"key": "lat", "value": "0.0"},
+                {"key": "lon", "value": "0.0"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Error code NO_RESULT', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.error.code).to.eql('NO_RESULT');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC_R3: Tọa độ bị đảo thứ tự (lat=106.6980, lon=10.7725)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/reverse?lat=106.6980&lon=10.7725",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "reverse"],
+              "query": [
+                {"key": "lat", "value": "106.6980"},
+                {"key": "lon", "value": "10.7725"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error code INVALID_COORDINATE', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.error.code).to.eql('INVALID_COORDINATE');",
+                  "    pm.expect(json.error.message).to.include('đảo thứ tự');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Monitoring & Cache Controls",
+      "item": [
+        {
+          "name": "Xem Thống kê Cache & Circuit Breaker",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Xem Nhật ký gần đây (Logs)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/logs?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "logs"],
+              "query": [{"key": "limit", "value": "20"}]
+            }
+          }
+        },
+        {
+          "name": "Xóa sạch Cache",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/geocode/cache/clear",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "geocode", "cache", "clear"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
+
